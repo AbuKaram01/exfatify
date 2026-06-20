@@ -1,6 +1,6 @@
 [package]
 name        = "exfatify"
-version     = "1.0.0"
+version     = "1.0.1"
 edition     = "2021"
 description = "Sanitize filenames for exFAT compatibility"
 license     = "AGPL-3.0-or-later"

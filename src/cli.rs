@@ -26,21 +26,20 @@ use std::path::PathBuf;
 
 use clap::Parser;
 
-/// Parsed command-line arguments.
-///
-/// Field-level doc comments below double as each flag's `--help` text
-/// (via `clap`'s derive macro) and as `cargo doc` documentation.
+/// Parsed command-line arguments for the `exfatify` CLI.
 #[derive(Parser, Debug)]
 #[command(
     name = "exfatify",
-    version = "1.0.0",
+    version,
     about = "Sanitize filenames for exFAT compatibility",
+    long_about = "Sanitize filenames for exFAT compatibility",
+    before_help = "\
+Scan only    : exfatify <PATH>
+Preview fix  : exfatify --fix --dry-run <PATH>
+Apply fix    : exfatify --fix <PATH>
+Custom char  : exfatify --fix --replace _ <PATH>
+With backup  : exfatify --fix --backup --log report.txt <PATH>",
     after_help = "\
-MODES (default: --scan):
-  --scan      Report problems only, change nothing  [DEFAULT]
-  --dry-run   Show what would change, change nothing
-  --fix       Actually rename files
-
 ILLEGAL exFAT CHARACTERS:
   \\ : * ? \" < > |  and control chars U+0000 - U+001F
   Filenames longer than 255 UTF-16 code units
@@ -48,16 +47,6 @@ ILLEGAL exFAT CHARACTERS:
   (a leading PERIOD is fine — dotfiles like .bashrc are untouched)
   Reserved names: CON PRN AUX NUL COM1-9 LPT1-9
   (reserved names are blocked with any extension, e.g. NUL.tar.gz)
-
-EXAMPLES:
-  # Safe first — see what would change
-  exfatify --scan ~/Downloads
-  exfatify --fix --dry-run ~/Documents
-
-  # Apply fixes
-  exfatify --fix ~/Pictures
-  exfatify --fix --replace _ ~/Music
-  exfatify --fix --backup --log /tmp/report.txt ~/Documents
 
 NOTE: Checks each name's own length, not the full path's length. Some
 Windows software still enforces a 260-char limit on the whole path —
