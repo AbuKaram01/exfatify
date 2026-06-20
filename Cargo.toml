@@ -1,0 +1,65 @@
+[package]
+name        = "exfatify"
+version     = "1.0.0"
+edition     = "2021"
+description = "Sanitize filenames for exFAT compatibility"
+license     = "AGPL-3.0-or-later"
+authors     = ["AbuKaram01"]
+repository  = "https://github.com/AbuKaram01/exfatify"
+readme      = "README.md"
+
+# Exposed as a library (target name: `exfat_sanitize`) so other tools —
+# e.g. a GUI front-end — can depend on this crate and call into the
+# sanitization logic directly, instead of shelling out to the CLI binary.
+[lib]
+name = "exfat_sanitize"
+path = "src/lib.rs"
+
+[[bin]]
+name = "exfatify"
+path = "src/main.rs"
+
+[dependencies]
+clap    = { version = "4", features = ["derive"] }
+colored = "2"
+walkdir = "2"
+
+[dev-dependencies]
+# Used only by the test suite to create disposable directories so tests
+# never touch real files on the developer's machine.
+tempfile = "3"
+
+# ── release optimizations ─────────────────────────────────────────────────────
+[profile.release]
+opt-level     = 3
+lto           = true
+codegen-units = 1
+strip         = true
+panic         = "abort"
+
+# ── .deb (cargo-deb) ──────────────────────────────────────────────────────────
+[package.metadata.deb]
+name               = "exfatify"
+maintainer         = "AbuKaram01"
+copyright          = "2026, AbuKaram01"
+license-file       = "LICENSE"
+extended-description = """\
+A CLI tool that scans directories for filenames incompatible with the
+exFAT filesystem — illegal characters, reserved Windows device names,
+trailing spaces or periods, names over 255 UTF-16 code units, and
+case-insensitive collisions — and renames them safely before transfer
+to an exFAT drive. Supports scan, dry-run, and fix modes, with optional
+per-file backups."""
+depends            = "$auto"
+section            = "utils"
+priority           = "optional"
+assets = [
+    ["target/release/exfatify", "usr/bin/", "755"],
+]
+
+# ── .rpm (cargo-generate-rpm) ───────────────────────────────────────────────────
+[package.metadata.generate-rpm]
+release = "1"
+assets = [
+    { source = "target/release/exfatify", dest = "/usr/bin/exfatify", mode = "755" },
+]
