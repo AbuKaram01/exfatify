@@ -26,7 +26,7 @@ $ exfatify --scan ~/Pictures
   [PROBLEM] /home/you/Pictures/notes.txt 
             -> would become: notes.txt
   [PROBLEM] /home/you/Pictures/Screenshot.PNG
-            -> would become: screenshot-1.PNG
+            -> would become: Screenshot-1.PNG
 
 ──────────────────────────────────────────
   Problems found:  3
@@ -107,7 +107,7 @@ sudo rpm -i target/generate-rpm/exfatify-*.rpm
 
 ```toml
 [dependencies]
-exfatify = "1.5"
+exfatify = "1.0"
 ```
 
 See [Using it as a library](#using-it-as-a-library).
