@@ -33,7 +33,7 @@ use crate::constants::{ILLEGAL_CHARS, MAX_NAME_UTF16, RESERVED_NAMES};
 /// # Examples
 ///
 /// ```
-/// use exfat_sanitize::checker::utf16_len;
+/// use exfatify::checker::utf16_len;
 ///
 /// assert_eq!(utf16_len("hello"), 5);
 /// assert_eq!(utf16_len("😀"), 2); // outside the BMP -> surrogate pair
@@ -66,7 +66,7 @@ pub fn utf16_len(s: &str) -> usize {
 /// # Examples
 ///
 /// ```
-/// use exfat_sanitize::checker::needs_fix;
+/// use exfatify::checker::needs_fix;
 ///
 /// assert!(needs_fix("report*.txt"));      // illegal char
 /// assert!(needs_fix("notes "));           // trailing space
@@ -97,7 +97,7 @@ pub fn needs_fix(name: &str) -> bool {
 /// # Examples
 ///
 /// ```
-/// use exfat_sanitize::checker::is_reserved;
+/// use exfatify::checker::is_reserved;
 ///
 /// assert!(is_reserved("NUL"));
 /// assert!(is_reserved("nul.txt"));

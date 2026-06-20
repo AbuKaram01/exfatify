@@ -51,7 +51,7 @@ use crate::constants::{ILLEGAL_CHARS, MAX_NAME_UTF16};
 /// # Examples
 ///
 /// ```
-/// use exfat_sanitize::sanitizer::sanitize;
+/// use exfatify::sanitizer::sanitize;
 ///
 /// assert_eq!(sanitize("report*.txt", '-'), "report-.txt");
 /// assert_eq!(sanitize("trailing space ", '-'), "trailing space");
@@ -175,7 +175,7 @@ pub(crate) fn truncate_to_utf16(s: &str, max_utf16: usize) -> String {
 ///
 /// ```no_run
 /// use std::path::Path;
-/// use exfat_sanitize::sanitizer::case_insensitive_match_exists;
+/// use exfatify::sanitizer::case_insensitive_match_exists;
 ///
 /// // True if some other entry named e.g. "REPORT.TXT" or "Report.txt"
 /// // already lives in this directory.
@@ -231,7 +231,7 @@ pub fn case_insensitive_match_exists(dir: &Path, name: &str, exclude: Option<&Pa
 ///
 /// ```no_run
 /// use std::path::Path;
-/// use exfat_sanitize::sanitizer::is_case_insensitive_duplicate;
+/// use exfatify::sanitizer::is_case_insensitive_duplicate;
 ///
 /// // If "Report.txt" and "report.txt" are both in this directory,
 /// // "Report.txt" (sorts first) is the keeper and "report.txt" is the
@@ -274,7 +274,7 @@ pub fn is_case_insensitive_duplicate(dir: &Path, name: &str, exclude: Option<&Pa
 ///
 /// ```no_run
 /// use std::path::Path;
-/// use exfat_sanitize::sanitizer::unique_name;
+/// use exfatify::sanitizer::unique_name;
 ///
 /// // If "photo.jpg" (in any case) already exists in this directory, this
 /// // returns "photo-1.jpg" (or "-2", etc., as needed).
@@ -319,7 +319,7 @@ pub fn unique_name(dir: &Path, name: &str, exclude: Option<&Path>) -> String {
 /// # Examples
 ///
 /// ```
-/// use exfat_sanitize::sanitizer::backup_name;
+/// use exfatify::sanitizer::backup_name;
 ///
 /// assert_eq!(backup_name("photo.jpg"), "photo.jpg.bak");
 /// ```

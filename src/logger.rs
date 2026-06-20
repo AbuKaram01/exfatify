@@ -51,7 +51,7 @@ pub struct Stats {
 /// # Examples
 ///
 /// ```
-/// use exfat_sanitize::logger::strip_ansi;
+/// use exfatify::logger::strip_ansi;
 ///
 /// let colored = "\x1b[31mERROR\x1b[0m: something broke";
 /// assert_eq!(strip_ansi(colored), "ERROR: something broke");

@@ -14,7 +14,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 //! Black-box test of the full directory-processing API
-//! ([`exfat_sanitize::processor::process`]) — the entry point a GUI would
+//! ([`exfatify::processor::process`]) — the entry point a GUI would
 //! call after letting the user pick a folder and a mode (scan / dry-run /
 //! fix). This is the closest thing to an "integration test" in the crate:
 //! it exercises traversal, sanitization, collision-avoidance, and backup
@@ -22,9 +22,9 @@
 
 use std::fs;
 
-use exfat_sanitize::cli::Args;
-use exfat_sanitize::logger::Stats;
-use exfat_sanitize::processor::process;
+use exfatify::cli::Args;
+use exfatify::logger::Stats;
+use exfatify::processor::process;
 use tempfile::tempdir;
 
 /// Builds an [`Args`] value the way a GUI would: directly from user

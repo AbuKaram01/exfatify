@@ -15,7 +15,7 @@
 
 //! Binary entry point for the `exfatify` command-line tool.
 //!
-//! All reusable logic lives in the `exfat_sanitize` library crate (see
+//! All reusable logic lives in the `exfatify` library crate (see
 //! `src/lib.rs` and its modules). This file is only responsible for:
 //! parsing CLI args, validating them, printing the run summary, and
 //! wiring everything together — nothing here is reachable from outside
@@ -25,9 +25,9 @@
 use clap::Parser;
 use colored::*;
 
-use exfat_sanitize::cli::Args;
-use exfat_sanitize::logger::{emit, open_log_file, Stats};
-use exfat_sanitize::processor::process;
+use exfatify::cli::Args;
+use exfatify::logger::{emit, open_log_file, Stats};
+use exfatify::processor::process;
 
 fn main() {
     let args = Args::parse();

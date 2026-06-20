@@ -51,8 +51,8 @@
 //! driven by your own UI instead of command-line flags.
 //!
 //! ```
-//! use exfat_sanitize::checker::needs_fix;
-//! use exfat_sanitize::sanitizer::sanitize;
+//! use exfatify::checker::needs_fix;
+//! use exfatify::sanitizer::sanitize;
 //!
 //! let candidate = "report*.txt";
 //! if needs_fix(candidate) {

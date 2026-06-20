@@ -183,11 +183,11 @@ Directories are processed contents-first: every file and subdirectory gets renam
 
 ## Using it as a library
 
-The CLI binary is a thin wrapper around the `exfat_sanitize` library — everything it does is available directly, which makes it straightforward to build a GUI, a batch-processing pipeline, or your own tooling on top of it instead of shelling out to the binary.
+The CLI binary is a thin wrapper around the `exfatify` library — everything it does is available directly, which makes it straightforward to build a GUI, a batch-processing pipeline, or your own tooling on top of it instead of shelling out to the binary.
 
 ```rust
-use exfat_sanitize::checker::needs_fix;
-use exfat_sanitize::sanitizer::sanitize;
+use exfatify::checker::needs_fix;
+use exfatify::sanitizer::sanitize;
 
 let candidate = "Report: Q3?.pdf";
 
@@ -200,9 +200,9 @@ if needs_fix(candidate) {
 Walking and fixing a whole directory tree, the same way the CLI does:
 
 ```rust
-use exfat_sanitize::cli::Args;
-use exfat_sanitize::logger::Stats;
-use exfat_sanitize::processor::process;
+use exfatify::cli::Args;
+use exfatify::logger::Stats;
+use exfatify::processor::process;
 use std::path::PathBuf;
 
 let args = Args {

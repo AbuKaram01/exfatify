@@ -131,7 +131,7 @@ impl Args {
     ///
     /// ```
     /// use clap::Parser;
-    /// use exfat_sanitize::cli::Args;
+    /// use exfatify::cli::Args;
     ///
     /// let args = Args::parse_from(["exfatify", "--scan", "/tmp"]);
     /// assert!(args.is_readonly());
@@ -158,7 +158,7 @@ impl Args {
     ///
     /// ```
     /// use clap::Parser;
-    /// use exfat_sanitize::cli::{Args, InvalidReplaceChar};
+    /// use exfatify::cli::{Args, InvalidReplaceChar};
     ///
     /// let args = Args::parse_from(["exfatify", "--replace", "*", "/tmp"]);
     /// assert_eq!(args.validate_replace_char(), Err(InvalidReplaceChar::Illegal('*')));
