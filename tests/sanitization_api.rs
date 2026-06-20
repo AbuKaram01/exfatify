@@ -16,13 +16,13 @@
 //! Black-box tests of the public sanitization API.
 //!
 //! Files under `tests/` are compiled by Cargo as separate crates that can
-//! only see `exfat_sanitize`'s *public* surface — exactly the contract an
+//! only see `exfatify`'s *public* surface — exactly the contract an
 //! external integrator (e.g. a GUI front-end) is bound by. If something
 //! here doesn't compile, it means the public API isn't actually usable
 //! the way it was meant to be.
 
-use exfat_sanitize::checker::{needs_fix, utf16_len};
-use exfat_sanitize::sanitizer::{
+use exfatify::checker::{needs_fix, utf16_len};
+use exfatify::sanitizer::{
     case_insensitive_match_exists, is_case_insensitive_duplicate, sanitize, unique_name,
 };
 use tempfile::tempdir;
