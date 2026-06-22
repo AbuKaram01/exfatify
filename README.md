@@ -107,7 +107,7 @@ sudo rpm -i target/generate-rpm/exfatify-*.rpm
 
 ```toml
 [dependencies]
-exfatify = "1.0.1"
+exfatify = "1.0.2"
 ```
 
 See [Using it as a library](#using-it-as-a-library).

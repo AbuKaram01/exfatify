@@ -50,7 +50,10 @@ ILLEGAL exFAT CHARACTERS:
 
 NOTE: Checks each name's own length, not the full path's length. Some
 Windows software still enforces a 260-char limit on the whole path —
-see the README for details."
+see the README for details.
+
+NOTE: The replacement character cannot be '/' — it would create path
+components instead of replacing characters."
 )]
 pub struct Args {
     /// Root directory to scan (recursively).
@@ -69,8 +72,8 @@ pub struct Args {
     pub dry_run: bool,
 
     /// Character used to replace each illegal character. Must not itself
-    /// be illegal, a control character, a space, or a period — see
-    /// [`Args::validate_replace_char`].
+    /// be illegal, a control character, a space, a period, or a path
+    /// separator ('/' on Unix, '\' on Windows).
     #[arg(short = 'r', long, default_value = "-")]
     pub replace: char,
 
@@ -175,6 +178,9 @@ impl Args {
         if self.replace == '.' || self.replace == ' ' {
             return Err(InvalidReplaceChar::ProducesTrailingIssue(self.replace));
         }
+        if self.replace == '/' || self.replace == '\0' {
+            return Err(InvalidReplaceChar::Illegal(self.replace));
+        }
         Ok(())
     }
 }
@@ -251,6 +257,15 @@ mod tests {
         assert_eq!(
             args.validate_replace_char(),
             Err(InvalidReplaceChar::ProducesTrailingIssue('.'))
+        );
+    }
+
+    #[test]
+    fn validate_replace_char_rejects_slash() {
+        let args = parse(&["--replace", "/", "/tmp"]);
+        assert_eq!(
+            args.validate_replace_char(),
+            Err(InvalidReplaceChar::Illegal('/'))
         );
     }
 
