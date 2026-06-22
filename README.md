@@ -161,7 +161,7 @@ exfatify [OPTIONS] <PATH>
 | `--scan` | `-s` | Report problems only, change nothing. **Default mode.** |
 | `--fix` | `-f` | Actually rename files. |
 | `--dry-run` | `-n` | Show what `--fix` would do, without changing anything. |
-| `--replace <CHAR>` | `-r` | Character used to replace illegal characters. Default: `-` |
+| `--replace <CHAR>` | `-r` | Character used to replace illegal characters. Cannot itself be illegal (`` \ : * ? " < > | ``), a control character, a space, a period, or `/`. Default: `-` |
 | `--backup` | `-b` | Copy each file to `<name>.bak` before renaming it. |
 | `--log <FILE>` | `-l` | Write a plain-text copy of the run to a file (mode `0600`). |
 | `--verbose` | `-v` | Also print entries that are already exFAT-safe. |
@@ -232,7 +232,7 @@ cargo doc --open
 ## Testing
 
 ```bash
-cargo test     # 61 unit tests + 9 integration tests + 12 doctests
+cargo test     # 62 unit tests + 9 integration tests + 12 doctests
 cargo clippy   # zero warnings
 ```
 
