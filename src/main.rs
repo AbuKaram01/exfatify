@@ -15,19 +15,26 @@
 
 //! Binary entry point for the `exfatify` command-line tool.
 //!
-//! All reusable logic lives in the `exfatify` library crate (see
-//! `src/lib.rs` and its modules). This file is only responsible for:
-//! parsing CLI args, validating them, printing the run summary, and
-//! wiring everything together — nothing here is reachable from outside
-//! the binary, which is exactly why it stays untested directly. Every
-//! function it calls is unit-tested in its own module instead.
+//! All reusable logic lives in this crate's own modules (declared below).
+//! This file is only responsible for: parsing CLI args, validating them,
+//! printing the run summary, and wiring everything together — nothing
+//! here is reachable from outside the binary, which is exactly why it
+//! stays untested directly. Every function it calls is unit-tested in
+//! its own module instead.
+
+mod checker;
+mod cli;
+mod constants;
+mod logger;
+mod processor;
+mod sanitizer;
 
 use clap::Parser;
 use colored::*;
 
-use exfatify::cli::Args;
-use exfatify::logger::{emit, open_log_file, Stats};
-use exfatify::processor::process;
+use crate::cli::Args;
+use crate::logger::{emit, open_log_file, Stats};
+use crate::processor::process;
 
 fn main() {
     let args = Args::parse();

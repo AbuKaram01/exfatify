@@ -8,13 +8,6 @@ authors     = ["AbuKaram01"]
 repository  = "https://github.com/AbuKaram01/exfatify"
 readme      = "README.md"
 
-# Exposed as a library (target name: `exfatify`) so other tools —
-# e.g. a GUI front-end — can depend on this crate and call into the
-# sanitization logic directly, instead of shelling out to the CLI binary.
-[lib]
-name = "exfatify"
-path = "src/lib.rs"
-
 [[bin]]
 name = "exfatify"
 path = "src/main.rs"
