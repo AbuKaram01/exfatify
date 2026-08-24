@@ -265,8 +265,8 @@ mod tests {
     use std::path::PathBuf;
     use tempfile::tempdir;
 
-    /// Builds an [`Args`] value directly — the way an embedding GUI would,
-    /// without going through `clap`'s command-line parser.
+    /// Builds an [`Args`] value directly, without going through `clap`'s
+    /// command-line parser.
     fn args_for(path: PathBuf, fix: bool, dry_run: bool) -> Args {
         Args {
             path,

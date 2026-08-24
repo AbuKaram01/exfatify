@@ -27,8 +27,8 @@ use std::path::Path;
 
 /// Tally of what happened during a [`crate::processor::process`] run.
 ///
-/// A GUI front-end can read these fields after a run completes to render
-/// a results summary without having to re-parse log output.
+/// The CLI binary reads these fields after a run completes to print its
+/// results summary, without having to re-parse log output.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Stats {
     /// Number of entries whose names violated an exFAT rule.
@@ -51,7 +51,7 @@ pub struct Stats {
 /// # Examples
 ///
 /// ```
-/// use exfatify::logger::strip_ansi;
+/// use crate::logger::strip_ansi;
 ///
 /// let colored = "\x1b[31mERROR\x1b[0m: something broke";
 /// assert_eq!(strip_ansi(colored), "ERROR: something broke");

@@ -15,12 +15,10 @@
 
 //! Command-line argument definitions for the `exfatify` binary.
 //!
-//! Used directly only by `src/main.rs`. A GUI front-end embedding this
-//! crate would normally talk to [`crate::checker`], [`crate::sanitizer`],
-//! and [`crate::processor`] directly rather than constructing an [`Args`]
-//! value — but [`Args::validate_replace_char`] is reusable validation
-//! logic worth calling from a GUI too (e.g. as soon as the user types into
-//! a "replacement character" field).
+//! Used directly only by `src/main.rs`. [`Args::validate_replace_char`]
+//! is pulled out as its own method (rather than living inline in `main`)
+//! so the validation logic is easy to unit-test and reason about on its
+//! own, separate from argument parsing.
 
 use std::path::PathBuf;
 
@@ -97,8 +95,7 @@ pub struct Args {
 /// Why a candidate replacement character ([`Args::replace`]) can't be used.
 ///
 /// Returned by [`Args::validate_replace_char`]. Implements [`std::fmt::Display`]
-/// with the same human-readable message the CLI binary prints, so GUI code
-/// can show it directly too.
+/// with the same human-readable message the CLI binary prints.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InvalidReplaceChar {
     /// The character is itself one of exFAT's illegal characters, or a
@@ -134,7 +131,7 @@ impl Args {
     ///
     /// ```
     /// use clap::Parser;
-    /// use exfatify::cli::Args;
+    /// use crate::cli::Args;
     ///
     /// let args = Args::parse_from(["exfatify", "--scan", "/tmp"]);
     /// assert!(args.is_readonly());
@@ -153,15 +150,14 @@ impl Args {
     /// unusable if so.
     ///
     /// Extracted as its own method (rather than living inline in `main`)
-    /// so a GUI can call it the moment the user picks a replacement
-    /// character — e.g. to disable a "Fix" button and show an inline error
-    /// — instead of only discovering the problem after the run starts.
+    /// so the validation logic stays independently unit-testable, separate
+    /// from argument parsing.
     ///
     /// # Examples
     ///
     /// ```
     /// use clap::Parser;
-    /// use exfatify::cli::{Args, InvalidReplaceChar};
+    /// use crate::cli::{Args, InvalidReplaceChar};
     ///
     /// let args = Args::parse_from(["exfatify", "--replace", "*", "/tmp"]);
     /// assert_eq!(args.validate_replace_char(), Err(InvalidReplaceChar::Illegal('*')));
