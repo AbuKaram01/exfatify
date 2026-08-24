@@ -13,37 +13,21 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-//! exFAT naming-rule constants.
-//!
-//! These values come directly from the exFAT specification and, for the
-//! reserved device names, from the Windows naming conventions that exFAT
-//! inherits in practice (most exFAT volumes get plugged into a Windows
-//! machine at some point). Nothing in this module performs any logic — it
-//! only centralizes the "magic values" so [`crate::checker`] and
-//! [`crate::sanitizer`] can't drift out of sync with each other.
+//! Shared exFAT naming-rule constants, used by [`crate::checker`] and
+//! [`crate::sanitizer`].
 
-/// Maximum filename length allowed by exFAT, measured in UTF-16 code units.
-///
-/// This is **not** bytes (UTF-8 length) and **not** `char` count (Unicode
-/// scalar values) — see [`crate::checker::utf16_len`] for why that
-/// distinction matters.
+/// Maximum filename length allowed by exFAT, in UTF-16 code units — not
+/// bytes, not `char`s. See [`crate::checker::utf16_len`].
 pub const MAX_NAME_UTF16: usize = 255;
 
-/// Characters that exFAT forbids anywhere in a filename.
+/// Characters forbidden anywhere in an exFAT filename.
 ///
-/// Control characters (`U+0000`–`U+001F`) are also forbidden but are
-/// checked separately via a numeric comparison rather than listed here,
-/// since there are 32 of them and listing them would add noise without
-/// adding clarity.
+/// Control characters (`U+0000`–`U+001F`) are checked separately via a
+/// numeric range instead of being listed here.
 pub const ILLEGAL_CHARS: &[char] = &['\\', ':', '*', '?', '"', '<', '>', '|'];
 
-/// Device names reserved by Windows.
-///
-/// exFAT itself doesn't reserve these names, but volumes formatted exFAT
-/// are routinely shared with or read by Windows, where a file or folder
-/// named e.g. `NUL` — or `NUL.tar.gz`, since the restriction applies
-/// regardless of extension — causes confusing failures. Sanitizing them
-/// proactively avoids that class of bug entirely.
+/// Windows device names reserved regardless of extension (e.g.
+/// `NUL.tar.gz` is still reserved).
 pub const RESERVED_NAMES: &[&str] = &[
     "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8",
     "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9",
@@ -55,8 +39,6 @@ mod tests {
 
     #[test]
     fn illegal_chars_are_all_ascii_punctuation() {
-        // Sanity check: every illegal char should be a single ASCII byte,
-        // since that's what every exFAT/Windows naming-rule reference lists.
         for &c in ILLEGAL_CHARS {
             assert!(c.is_ascii(), "expected ASCII char, got {:?}", c);
         }
@@ -64,8 +46,6 @@ mod tests {
 
     #[test]
     fn reserved_names_are_already_uppercase() {
-        // checker::is_reserved() uppercases before comparing, so this list
-        // must itself be uppercase or that comparison would silently fail.
         for name in RESERVED_NAMES {
             assert_eq!(*name, name.to_uppercase());
         }

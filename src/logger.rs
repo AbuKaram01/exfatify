@@ -15,38 +15,28 @@
 
 //! Run statistics and dual console/file logging.
 //!
-//! [`emit`] is the single place output happens: every message goes to
-//! stdout, and — if a log file was opened — a stripped (no ANSI color
-//! codes) copy is also appended to it. Keeping one call site means colored
-//! terminal output and a clean, `grep`-able log file can never drift out
-//! of sync.
+//! [`emit`] is the single output call site: every message goes to
+//! stdout, and — if a log file is open — a plain-text (ANSI-stripped)
+//! copy is appended to it, so the two never drift out of sync.
 
 use std::fs;
 use std::io::Write;
 use std::path::Path;
 
 /// Tally of what happened during a [`crate::processor::process`] run.
-///
-/// The CLI binary reads these fields after a run completes to print its
-/// results summary, without having to re-parse log output.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Stats {
     /// Number of entries whose names violated an exFAT rule.
     pub found: usize,
-    /// Number of entries actually renamed (only incremented in fix mode).
+    /// Number of entries actually renamed (fix mode only).
     pub fixed: usize,
     /// Number of entries skipped (symlinks, special files, non-UTF-8 names).
     pub skipped: usize,
-    /// Number of entries that failed to process (rename/backup/copy errors).
+    /// Number of entries that failed to process.
     pub errors: usize,
 }
 
-/// Strips ANSI escape sequences (e.g. the `colored` crate's terminal
-/// color codes) from `s`, returning a plain-text copy.
-///
-/// Used so the log file written by [`emit`] stays human-readable in
-/// editors and greppable, even though the same string printed to the
-/// terminal is colorized.
+/// Strips ANSI escape sequences from `s`, returning a plain-text copy.
 ///
 /// # Examples
 ///
@@ -77,11 +67,7 @@ pub fn strip_ansi(s: &str) -> String {
 }
 
 /// Prints `msg` to stdout and, if `log` is `Some`, appends a plain-text
-/// (ANSI-stripped) copy to the log file.
-///
-/// This is the only place the crate writes output — every status line
-/// from [`crate::processor::process`] and the CLI binary's banner/summary
-/// goes through here.
+/// copy to the log file.
 pub fn emit(msg: &str, log: &mut Option<fs::File>) {
     println!("{}", msg);
     if let Some(ref mut f) = log {
@@ -91,9 +77,8 @@ pub fn emit(msg: &str, log: &mut Option<fs::File>) {
 
 /// Opens (creating or truncating) the log file at `path`.
 ///
-/// On Unix, the file is created with mode `0600` (owner read/write only),
-/// since the log can contain full filesystem paths — information that
-/// shouldn't be world-readable by default.
+/// On Unix, created with mode `0600` (owner-only), since the log can
+/// contain full filesystem paths.
 #[cfg(unix)]
 pub fn open_log_file(path: &Path) -> std::io::Result<fs::File> {
     use std::os::unix::fs::OpenOptionsExt;
@@ -107,8 +92,7 @@ pub fn open_log_file(path: &Path) -> std::io::Result<fs::File> {
 
 /// Opens (creating or truncating) the log file at `path`.
 ///
-/// Non-Unix fallback: no special permission bits are set, since the
-/// `std::os::unix` API used on Unix isn't available here.
+/// Non-Unix fallback: no special permission bits are set.
 #[cfg(not(unix))]
 pub fn open_log_file(path: &Path) -> std::io::Result<fs::File> {
     fs::OpenOptions::new()

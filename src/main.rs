@@ -15,12 +15,9 @@
 
 //! Binary entry point for the `exfatify` command-line tool.
 //!
-//! All reusable logic lives in this crate's own modules (declared below).
-//! This file is only responsible for: parsing CLI args, validating them,
-//! printing the run summary, and wiring everything together — nothing
-//! here is reachable from outside the binary, which is exactly why it
-//! stays untested directly. Every function it calls is unit-tested in
-//! its own module instead.
+//! Parses CLI args, validates them, wires up the run, and prints the
+//! summary. All reusable logic lives in this crate's own modules, each
+//! unit-tested independently.
 
 mod checker;
 mod cli;
@@ -112,26 +109,8 @@ fn main() {
     emit("", &mut log);
     emit(
         &format!(
-            "  {}: \\ : * ? \" < > |  +  ctrl U+0000-U+001F",
-            "Illegal chars".bold()
-        ),
-        &mut log,
-    );
-    emit(
-        &format!(
-            "  {}: leading space, trailing space, or trailing period",
-            "Also illegal".bold()
-        ),
-        &mut log,
-    );
-    emit(
-        &format!("  {}: 255 UTF-16 code units", "Max name len".bold()),
-        &mut log,
-    );
-    emit(
-        &format!(
-            "  {}: CON PRN AUX NUL COM1-9 LPT1-9 (any extension)",
-            "Reserved".bold()
+            "  {}: \\:*?\"<>| + ctrl, leading/trailing space, trailing period, len>255, reserved names",
+            "Rules".bold()
         ),
         &mut log,
     );

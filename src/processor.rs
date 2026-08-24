@@ -16,10 +16,7 @@
 //! Directory tree traversal: applies [`crate::checker`] and
 //! [`crate::sanitizer`] to every entry under a root path.
 //!
-//! This is the only module that performs bulk filesystem reads/writes.
-//! Everything else in the crate is either pure or touches the filesystem
-//! in a narrowly-scoped way (e.g. [`crate::sanitizer::unique_name`] only
-//! reads).
+//! The only module that performs bulk filesystem writes.
 
 use std::fs;
 
@@ -31,44 +28,27 @@ use crate::cli::Args;
 use crate::logger::{emit, Stats};
 use crate::sanitizer::{backup_name, is_case_insensitive_duplicate, sanitize, unique_name};
 
-/// Walks `args.path` and, for every file/directory/symlink whose name
-/// either violates an exFAT naming rule *or* is the "loser" of a
-/// case-insensitive collision with a sibling — matching real exFAT
-/// semantics, where e.g. `"Report.txt"` and `"report.txt"` are the same
-/// file — either reports it (scan/dry-run mode) or renames it (fix mode),
+/// Walks `args.path` and, for every entry whose name either violates an
+/// exFAT naming rule or is the "loser" of a case-insensitive collision
+/// with a sibling, reports it (scan/dry-run) or renames it (fix),
 /// updating `stats` and writing through [`emit`] as it goes.
 ///
-/// Within any group of siblings that only differ by case, exactly one
-/// (the lexicographically smallest name) is left alone as the "keeper";
-/// every other member of the group is treated as needing a fix. This is
-/// deterministic — see [`crate::sanitizer::is_case_insensitive_duplicate`]
-/// — so a scan and a subsequent fix run always agree on which entries (and
-/// how many) are affected, even though scan mode never actually mutates
-/// the directory it's reading.
-///
-/// Traversal is `contents_first`, i.e. children are visited and renamed
-/// *before* their parent directory. This matters: renaming a directory
-/// before its contents would invalidate the paths of every entry still
+/// Traversal is `contents_first`: children are renamed before their
+/// parent directory, so a renamed parent never invalidates paths still
 /// queued beneath it.
 ///
 /// # Behavior by mode
 ///
-/// - **Scan** (default) / **dry-run**: prints what *would* change, renames nothing.
-/// - **Fix**: renames on disk; if `args.backup` is set, copies the original
-///   file (not directories, and not symlinks — see below) to `<name>.bak`
-///   first.
+/// - **Scan** (default) / **dry-run**: reports only, renames nothing.
+/// - **Fix**: renames on disk; backs up regular files first if
+///   `args.backup` is set.
 ///
-/// Symlinks are renamed by default (the link itself, never its target);
-/// pass `--no-symlinks` / `args.no_symlinks` to skip them entirely.
-/// Symlinks are never backed up even when `args.backup` is set: backing
-/// one up would mean copying whatever it *points to* (`fs::copy` follows
-/// symlinks), which silently turns a lightweight link into a full data
-/// copy — and fails outright for a dangling symlink, since there'd be
-/// nothing to read. Renaming the link itself never requires touching its
-/// target, so it isn't blocked by either problem.
+/// Symlinks are renamed (never their target) by default; pass
+/// `--no-symlinks` to skip them. Symlinks are never backed up, even with
+/// `--backup` — `fs::copy` follows symlinks, which would either copy the
+/// target's full contents or fail outright on a dangling link.
 ///
-/// See this module's own `#[cfg(test)]` block for full end-to-end
-/// examples of calling this function directly.
+/// See this module's own `#[cfg(test)]` block for end-to-end examples.
 pub fn process(args: &Args, stats: &mut Stats, log: &mut Option<fs::File>) {
     let readonly = args.is_readonly();
 
@@ -181,15 +161,9 @@ pub fn process(args: &Args, stats: &mut Stats, log: &mut Option<fs::File>) {
             }
         };
 
-        // A name can be a problem two different ways: the string itself
-        // violates an exFAT rule (`needs_fix`), or — even if perfectly
-        // valid on its own — it's the "loser" of a case-insensitive
-        // collision with a sibling already sitting in `dir` (exFAT would
-        // merge them). `is_case_insensitive_duplicate` deliberately only
-        // flags one side of any such pair (deterministically, by name —
-        // see its docs), so scan/dry-run and fix mode always agree on the
-        // count instead of scan flagging both sides of a pair that fix
-        // mode only ever renames one of.
+        // A name can be a problem two ways: the string itself violates a
+        // rule (`needs_fix`), or it's the "loser" of a case-insensitive
+        // collision with a sibling (see `is_case_insensitive_duplicate`).
         let is_collision_duplicate = is_case_insensitive_duplicate(dir, name, Some(path));
 
         if !needs_fix(name) && !is_collision_duplicate {
@@ -221,9 +195,8 @@ pub fn process(args: &Args, stats: &mut Stats, log: &mut Option<fs::File>) {
 
         let is_dir = file_type.is_dir();
 
-        // Only back up regular files. Directories have nothing to copy
-        // (their contents are walked separately), and symlinks are
-        // skipped deliberately — see the doc comment above.
+        // Only back up regular files: directories have nothing to copy,
+        // and symlinks are skipped deliberately (see doc comment above).
         if args.backup && !is_dir && !is_symlink {
             let bak_name = backup_name(name);
             let bak_path = dir.join(&bak_name);
@@ -385,12 +358,6 @@ mod tests {
         assert!(dir.path().join("bad-dir").join("bad-file.txt").exists());
     }
 
-    /// Regression test for the bug this whole audit pass was triggered by:
-    /// two sibling files that are each individually exFAT-legal, but
-    /// collide once exFAT's case-insensitivity is taken into account,
-    /// must still get separated by the fixer. The outcome is deterministic
-    /// (lexicographically smaller name is the keeper), not dependent on
-    /// directory iteration order — see `is_case_insensitive_duplicate`.
     #[test]
     fn fix_mode_separates_case_insensitive_collisions_between_clean_names() {
         let dir = tempdir().unwrap();
@@ -407,8 +374,7 @@ mod tests {
         );
         assert_eq!(stats.fixed, 1);
 
-        // 'R' (0x52) sorts before 'r' (0x72): "Report.txt" is the keeper,
-        // "report.txt" is the one that gets disambiguated.
+        // 'R' (0x52) sorts before 'r' (0x72): "Report.txt" is the keeper.
         assert!(
             dir.path().join("Report.txt").exists(),
             "the keeper must be untouched"
@@ -425,9 +391,6 @@ mod tests {
         );
     }
 
-    /// Scan mode must report the *same* count a following fix run would
-    /// actually act on — not flag both sides of a pair just because
-    /// nothing gets renamed during a scan.
     #[test]
     fn scan_mode_agrees_with_fix_mode_on_case_insensitive_collision_count() {
         let dir = tempdir().unwrap();
@@ -440,16 +403,12 @@ mod tests {
 
         assert_eq!(scan_stats.found, 1);
         assert_eq!(scan_stats.fixed, 0);
-        // Scan mode never renames anything.
         assert!(dir.path().join("Report.txt").exists());
         assert!(dir.path().join("report.txt").exists());
     }
 
     /// Two originally-different bad names that both sanitize to the same
-    /// clean name (`report*.txt` and `report?.txt` both become
-    /// `report_.txt` with replace = '_') must not overwrite each other —
-    /// `unique_name` has to catch this collision even though neither
-    /// input name existed on disk to begin with.
+    /// clean name must not overwrite each other.
     #[test]
     fn colliding_sanitized_names_do_not_overwrite_each_other() {
         let dir = tempdir().unwrap();
@@ -462,7 +421,6 @@ mod tests {
         process(&args, &mut stats, &mut None);
 
         assert_eq!(stats.fixed, 2);
-        // Neither original file's content was lost to a silent overwrite.
         let mut contents: Vec<String> = fs::read_dir(dir.path())
             .unwrap()
             .filter_map(|e| e.ok())
@@ -473,10 +431,8 @@ mod tests {
         assert_eq!(contents, vec!["first".to_string(), "second".to_string()]);
     }
 
-    /// Regression test for the other bug found in this audit pass: a
-    /// dangling (broken) symlink used to make `--backup` fail outright,
-    /// because `fs::copy` follows symlinks and there was nothing valid at
-    /// the far end to read.
+    /// A dangling symlink must not make `--backup` fail — `fs::copy`
+    /// follows symlinks, so backing one up would otherwise error out.
     #[cfg(unix)]
     #[test]
     fn fix_with_backup_does_not_choke_on_a_dangling_symlink() {

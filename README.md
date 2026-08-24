@@ -15,10 +15,7 @@ $ exfatify --scan ~/Pictures
   Skip symlinks:   false
   Backup files:    false
 
-  Illegal chars: \ : * ? " < > |  +  ctrl U+0000-U+001F
-  Also illegal: leading space, trailing space, or trailing period
-  Max name len: 255 UTF-16 code units
-  Reserved: CON PRN AUX NUL COM1-9 LPT1-9 (any extension)
+  Rules: \:*?"<>| + ctrl, leading/trailing space, trailing period, len>255, reserved names
 
 ──────────────────────────────────────────
   [PROBLEM] /home/you/Pictures/Trip: Day 1?.jpg
@@ -156,7 +153,7 @@ exfatify [OPTIONS] <PATH>
 | `--log <FILE>` | `-l` | Write a plain-text copy of the run to a file (mode `0600`). |
 | `--verbose` | `-v` | Also print entries that are already exFAT-safe. |
 | `--no-symlinks` | | Skip symlinks entirely instead of renaming the link itself. |
-| `--help` | `-h` | Show full help, including detailed rule reference. |
+| `--help` | `-h` | Show usage and flag descriptions. |
 | `--version` | `-V` | Print the version. |
 
 ## Modes

@@ -15,10 +15,7 @@
 
 //! Command-line argument definitions for the `exfatify` binary.
 //!
-//! Used directly only by `src/main.rs`. [`Args::validate_replace_char`]
-//! is pulled out as its own method (rather than living inline in `main`)
-//! so the validation logic is easy to unit-test and reason about on its
-//! own, separate from argument parsing.
+//! Used directly only by `src/main.rs`.
 
 use std::path::PathBuf;
 
@@ -29,49 +26,25 @@ use clap::Parser;
 #[command(
     name = "exfatify",
     version,
-    about = "Sanitize filenames for exFAT compatibility",
-    long_about = "Sanitize filenames for exFAT compatibility",
-    before_help = "\
-Scan only    : exfatify <PATH>
-Preview fix  : exfatify --fix --dry-run <PATH>
-Apply fix    : exfatify --fix <PATH>
-Custom char  : exfatify --fix --replace _ <PATH>
-With backup  : exfatify --fix --backup --log report.txt <PATH>",
-    after_help = "\
-ILLEGAL exFAT CHARACTERS:
-  \\ : * ? \" < > |  and control chars U+0000 - U+001F
-  Filenames longer than 255 UTF-16 code units
-  Filenames starting with a space, or ending with a space or a period
-  (a leading PERIOD is fine — dotfiles like .bashrc are untouched)
-  Reserved names: CON PRN AUX NUL COM1-9 LPT1-9
-  (reserved names are blocked with any extension, e.g. NUL.tar.gz)
-
-NOTE: Checks each name's own length, not the full path's length. Some
-Windows software still enforces a 260-char limit on the whole path —
-see the README for details.
-
-NOTE: The replacement character cannot be '/' — it would create path
-components instead of replacing characters."
+    about = "Sanitize filenames for exFAT compatibility"
 )]
 pub struct Args {
     /// Root directory to scan (recursively).
     pub path: PathBuf,
 
-    /// Report problems only; change nothing. This is the default mode.
+    /// Report problems only; change nothing. Default mode.
     #[arg(short = 's', long, conflicts_with_all = ["fix", "dry_run"])]
     pub scan: bool,
 
-    /// Actually rename files that violate exFAT naming rules.
+    /// Rename files that violate exFAT naming rules.
     #[arg(short = 'f', long, conflicts_with = "scan")]
     pub fix: bool,
 
-    /// Show what would be renamed under --fix, without changing anything.
+    /// Show what --fix would do, without changing anything.
     #[arg(short = 'n', long = "dry-run", conflicts_with = "scan")]
     pub dry_run: bool,
 
-    /// Character used to replace each illegal character. Must not itself
-    /// be illegal, a control character, a space, a period, or a path
-    /// separator ('/' on Unix, '\' on Windows).
+    /// Character used to replace each illegal character.
     #[arg(short = 'r', long, default_value = "-")]
     pub replace: char,
 
@@ -79,11 +52,11 @@ pub struct Args {
     #[arg(short = 'v', long)]
     pub verbose: bool,
 
-    /// Write a plain-text (ANSI-stripped) copy of the run's output to this file.
+    /// Write a plain-text copy of the run's output to this file.
     #[arg(short = 'l', long, value_name = "FILE")]
     pub log: Option<PathBuf>,
 
-    /// Before renaming a file (not a directory), copy it to `<name>.bak`.
+    /// Before renaming a file, copy it to `<n>.bak`.
     #[arg(short = 'b', long)]
     pub backup: bool,
 
@@ -93,17 +66,12 @@ pub struct Args {
 }
 
 /// Why a candidate replacement character ([`Args::replace`]) can't be used.
-///
-/// Returned by [`Args::validate_replace_char`]. Implements [`std::fmt::Display`]
-/// with the same human-readable message the CLI binary prints.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InvalidReplaceChar {
-    /// The character is itself one of exFAT's illegal characters, or a
-    /// control character — using it as a replacement would just
-    /// reintroduce the same problem it's meant to fix.
+    /// Itself an exFAT-illegal or control character.
     Illegal(char),
-    /// The character is a space or a period, which would recreate the
-    /// "trailing space/period" rule violation that's also illegal on exFAT.
+    /// A space or period — would recreate the trailing-space/period rule
+    /// violation.
     ProducesTrailingIssue(char),
 }
 
@@ -124,8 +92,8 @@ impl std::fmt::Display for InvalidReplaceChar {
 }
 
 impl Args {
-    /// Returns `true` if this invocation must not modify the filesystem —
-    /// i.e. `--scan` (explicit or implied by default) or `--dry-run`.
+    /// `true` if this invocation must not modify the filesystem: `--scan`
+    /// (explicit or default) or `--dry-run`.
     ///
     /// # Examples
     ///
@@ -135,23 +103,14 @@ impl Args {
     ///
     /// let args = Args::parse_from(["exfatify", "--scan", "/tmp"]);
     /// assert!(args.is_readonly());
-    ///
-    /// let args = Args::parse_from(["exfatify", "--fix", "/tmp"]);
-    /// assert!(!args.is_readonly());
     /// ```
     pub fn is_readonly(&self) -> bool {
-        // Equivalent to `scan || dry_run || (!fix && !dry_run)`, simplified:
-        // the `dry_run` disjunct already covers the `&& !dry_run` half of
-        // the third term, so all that's left to OR in is `!fix`.
+        // Equivalent to `scan || dry_run || (!fix && !dry_run)`, simplified
+        // to `scan || dry_run || !fix`.
         self.scan || self.dry_run || !self.fix
     }
 
-    /// Validates [`Self::replace`], returning an error describing why it's
-    /// unusable if so.
-    ///
-    /// Extracted as its own method (rather than living inline in `main`)
-    /// so the validation logic stays independently unit-testable, separate
-    /// from argument parsing.
+    /// Validates [`Self::replace`], returning why it's unusable if so.
     ///
     /// # Examples
     ///
@@ -161,9 +120,6 @@ impl Args {
     ///
     /// let args = Args::parse_from(["exfatify", "--replace", "*", "/tmp"]);
     /// assert_eq!(args.validate_replace_char(), Err(InvalidReplaceChar::Illegal('*')));
-    ///
-    /// let args = Args::parse_from(["exfatify", "--replace", "_", "/tmp"]);
-    /// assert_eq!(args.validate_replace_char(), Ok(()));
     /// ```
     pub fn validate_replace_char(&self) -> Result<(), InvalidReplaceChar> {
         use crate::constants::ILLEGAL_CHARS;

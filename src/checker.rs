@@ -13,22 +13,15 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-//! Read-only inspection of filenames against exFAT's naming rules.
+//! Read-only checks: does a filename violate an exFAT naming rule?
 //!
-//! Functions in this module never modify anything — they only answer the
-//! question "is this name a problem?". Once [`needs_fix`] says yes, hand
-//! the name to [`crate::sanitizer::sanitize`] to actually produce a fixed
-//! version.
+//! Nothing here modifies a name — pair [`needs_fix`] with
+//! [`crate::sanitizer::sanitize`] to actually fix one.
 
 use crate::constants::{ILLEGAL_CHARS, MAX_NAME_UTF16, RESERVED_NAMES};
 
-/// Returns the length of `s` in UTF-16 code units.
-///
-/// exFAT (like NTFS and the Win32 API in general) measures filename length
-/// in UTF-16 code units, not bytes and not `char`s. A character outside
-/// the Basic Multilingual Plane (most emoji, for example) is stored as a
-/// surrogate *pair* and therefore counts as 2 units — different from both
-/// `str::len()` (UTF-8 bytes) and `str::chars().count()` (1 per `char`).
+/// Length of `s` in UTF-16 code units — exFAT's unit of measurement, not
+/// bytes and not `char`s. A surrogate pair (most emoji) counts as 2.
 ///
 /// # Examples
 ///
@@ -36,44 +29,25 @@ use crate::constants::{ILLEGAL_CHARS, MAX_NAME_UTF16, RESERVED_NAMES};
 /// use crate::checker::utf16_len;
 ///
 /// assert_eq!(utf16_len("hello"), 5);
-/// assert_eq!(utf16_len("😀"), 2); // outside the BMP -> surrogate pair
+/// assert_eq!(utf16_len("😀"), 2);
 /// ```
 pub fn utf16_len(s: &str) -> usize {
     s.encode_utf16().count()
 }
 
-/// Returns `true` if `name` violates any exFAT naming rule and therefore
-/// needs to be sanitized before the entry can be safely copied to an
-/// exFAT volume.
-///
-/// Checks performed:
-/// - Length over 255 UTF-16 code units ([`crate::constants::MAX_NAME_UTF16`]).
-/// - An illegal character ([`crate::constants::ILLEGAL_CHARS`]) or a
-///   control character (`U+0000`–`U+001F`).
-/// - A [reserved device name](is_reserved).
-/// - A leading space, or a trailing space or period.
-///
-/// The leading/trailing-space and trailing-period rule comes from the
-/// FAT/exFAT long-name specification itself ("leading and trailing
-/// spaces in a long name are ignored... trailing periods are ignored"),
-/// not just from Windows Explorer's UI — Microsoft's own exFAT
-/// documentation and direct testing against the Win32 `CopyFile` API
-/// confirm trailing spaces/periods get silently trimmed on write.
-/// (Leading periods are explicitly **not** part of this rule and are left
-/// alone — dotfile-style names like `.bashrc` are completely normal on
-/// exFAT.)
+/// `true` if `name` breaks an exFAT naming rule: over 255 UTF-16 units, an
+/// illegal or control character, a [reserved name](is_reserved), or a
+/// leading space / trailing space / trailing period. Leading periods are
+/// fine — dotfiles like `.bashrc` are untouched.
 ///
 /// # Examples
 ///
 /// ```
 /// use crate::checker::needs_fix;
 ///
-/// assert!(needs_fix("report*.txt"));      // illegal char
-/// assert!(needs_fix("notes "));           // trailing space
-/// assert!(needs_fix(" notes"));           // leading space
-/// assert!(needs_fix("NUL.txt"));          // reserved name
-/// assert!(!needs_fix(".bashrc"));         // leading period is fine
-/// assert!(!needs_fix("normal_file.txt")); // already fine
+/// assert!(needs_fix("report*.txt"));
+/// assert!(needs_fix("notes "));
+/// assert!(!needs_fix(".bashrc"));
 /// ```
 pub fn needs_fix(name: &str) -> bool {
     utf16_len(name) > MAX_NAME_UTF16
@@ -86,23 +60,17 @@ pub fn needs_fix(name: &str) -> bool {
         || name.ends_with('.')
 }
 
-/// Returns `true` if `name`'s stem (everything before the first `.`)
-/// matches a Windows-reserved device name, case-insensitively, after
-/// trimming surrounding spaces and periods.
-///
-/// The check applies regardless of extension: `NUL.tar.gz` is just as
-/// reserved as plain `NUL`, since Windows reserves the name at the device
-/// level rather than the file level.
+/// `true` if `name`'s stem (before the first `.`) matches a
+/// Windows-reserved device name, case-insensitively, regardless of
+/// extension (`NUL.tar.gz` counts).
 ///
 /// # Examples
 ///
 /// ```
 /// use crate::checker::is_reserved;
 ///
-/// assert!(is_reserved("NUL"));
 /// assert!(is_reserved("nul.txt"));
-/// assert!(is_reserved("COM1.tar.gz"));
-/// assert!(!is_reserved("NULL")); // not an exact match, so it's safe
+/// assert!(!is_reserved("NULL"));
 /// ```
 pub fn is_reserved(name: &str) -> bool {
     let stem = name.find('.').map(|i| &name[..i]).unwrap_or(name);
@@ -143,10 +111,6 @@ mod tests {
         assert!(!needs_fix("trailing"));
     }
 
-    /// Per the FAT/exFAT long-name spec, leading spaces are ignored the
-    /// same way trailing ones are — but leading *periods* are explicitly
-    /// allowed (dotfile-style names are normal on exFAT), so only the
-    /// space case should be flagged here.
     #[test]
     fn needs_fix_detects_leading_space_but_not_leading_period() {
         assert!(needs_fix(" leading"));
