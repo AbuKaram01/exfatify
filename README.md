@@ -44,7 +44,6 @@ $ exfatify --scan ~/Pictures
 - [Usage](#usage)
 - [CLI reference](#cli-reference)
 - [Modes](#modes)
-- [Using it as a library](#using-it-as-a-library)
 - [Testing](#testing)
 - [Known limitations](#known-limitations)
 - [Contributing](#contributing)
@@ -102,15 +101,6 @@ cargo build --release
 cargo generate-rpm
 sudo rpm -i target/generate-rpm/exfatify-*.rpm
 ```
-
-### As a Rust dependency
-
-```toml
-[dependencies]
-exfatify = "1.0.2"
-```
-
-See [Using it as a library](#using-it-as-a-library).
 
 ## Usage
 
@@ -181,58 +171,10 @@ Scan and dry-run always report the **exact same set of changes** that a subseque
 
 Directories are processed contents-first: every file and subdirectory gets renamed before its parent, so a renamed parent directory never orphans paths still queued underneath it.
 
-## Using it as a library
-
-The CLI binary is a thin wrapper around the `exfatify` library — everything it does is available directly, which makes it straightforward to build a GUI, a batch-processing pipeline, or your own tooling on top of it instead of shelling out to the binary.
-
-```rust
-use exfatify::checker::needs_fix;
-use exfatify::sanitizer::sanitize;
-
-let candidate = "Report: Q3?.pdf";
-
-if needs_fix(candidate) {
-    let fixed = sanitize(candidate, '-');
-    println!("{candidate} -> {fixed}"); // Report- Q3-.pdf
-}
-```
-
-Walking and fixing a whole directory tree, the same way the CLI does:
-
-```rust
-use exfatify::cli::Args;
-use exfatify::logger::Stats;
-use exfatify::processor::process;
-use std::path::PathBuf;
-
-let args = Args {
-    path: PathBuf::from("/path/to/folder"),
-    scan: false,
-    fix: true,
-    dry_run: false,
-    replace: '-',
-    verbose: false,
-    log: None,
-    backup: true,
-    no_symlinks: false,
-};
-
-let mut stats = Stats::default();
-process(&args, &mut stats, &mut None);
-
-println!("fixed {} of {} problems", stats.fixed, stats.found);
-```
-
-Full API documentation, including every public function's edge cases:
-
-```bash
-cargo doc --open
-```
-
 ## Testing
 
 ```bash
-cargo test     # 62 unit tests + 9 integration tests + 12 doctests
+cargo test     # 68 unit tests + 11 doctests
 cargo clippy   # zero warnings
 ```
 
