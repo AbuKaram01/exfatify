@@ -599,4 +599,70 @@ mod tests {
         assert!(utf16_len(&result) <= MAX_NAME_UTF16);
         assert!(result.ends_with(".bak"));
     }
+
+    /// Preview-style workflow combining `checker::needs_fix` with
+    /// `sanitize`: list a directory, flag which names need fixing, and
+    /// build "old name -> new name" pairs for those without renaming
+    /// anything yet.
+    #[test]
+    fn preview_workflow_flags_only_names_that_need_fixing() {
+        use crate::checker::needs_fix;
+
+        let candidate_names = [
+            "vacation_photo.jpg",
+            "invoice<final>.pdf",
+            "notes ",
+            "NUL.txt",
+        ];
+
+        let preview: Vec<(&str, Option<String>)> = candidate_names
+            .iter()
+            .map(|&name| {
+                if needs_fix(name) {
+                    (name, Some(sanitize(name, '-')))
+                } else {
+                    (name, None)
+                }
+            })
+            .collect();
+
+        assert_eq!(preview[0], ("vacation_photo.jpg", None));
+        assert_eq!(preview[1].1.as_deref(), Some("invoice-final-.pdf"));
+        assert_eq!(preview[2].1.as_deref(), Some("notes"));
+        assert_eq!(preview[3].1.as_deref(), Some("_NUL.txt"));
+    }
+
+    /// Property-style regression test: whatever `sanitize()` produces must
+    /// itself pass `needs_fix()` as clean and stay within the UTF-16 cap —
+    /// across a batch of pathological inputs at once, not just the
+    /// one-off cases covered above.
+    #[test]
+    fn sanitize_output_never_needs_fixing_again_for_various_inputs() {
+        use crate::checker::needs_fix;
+
+        let long_dotfile = format!(".{}", "a".repeat(400));
+        let oversized_extension = format!("file.{}", "x".repeat(400));
+        let inputs = [
+            "weird:name*.txt",
+            "trailing.",
+            " leading space.txt",
+            "CON",
+            &"x".repeat(400),
+            "***",
+            long_dotfile.as_str(),
+            oversized_extension.as_str(),
+        ];
+
+        for input in inputs {
+            let cleaned = sanitize(input, '-');
+            assert!(
+                !needs_fix(&cleaned),
+                "sanitize({input:?}) produced {cleaned:?}, which still needs fixing"
+            );
+            assert!(
+                utf16_len(&cleaned) <= MAX_NAME_UTF16,
+                "sanitize({input:?}) produced {cleaned:?}, which is over the 255-unit limit"
+            );
+        }
+    }
 }

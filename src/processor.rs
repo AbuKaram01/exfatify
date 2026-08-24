@@ -67,8 +67,8 @@ use crate::sanitizer::{backup_name, is_case_insensitive_duplicate, sanitize, uni
 /// nothing to read. Renaming the link itself never requires touching its
 /// target, so it isn't blocked by either problem.
 ///
-/// See `tests/directory_processing_api.rs` for full end-to-end examples
-/// of calling this the way a GUI integrator would.
+/// See this module's own `#[cfg(test)]` block for full end-to-end
+/// examples of calling this function directly.
 pub fn process(args: &Args, stats: &mut Stats, log: &mut Option<fs::File>) {
     let readonly = args.is_readonly();
 
@@ -443,6 +443,34 @@ mod tests {
         // Scan mode never renames anything.
         assert!(dir.path().join("Report.txt").exists());
         assert!(dir.path().join("report.txt").exists());
+    }
+
+    /// Two originally-different bad names that both sanitize to the same
+    /// clean name (`report*.txt` and `report?.txt` both become
+    /// `report_.txt` with replace = '_') must not overwrite each other —
+    /// `unique_name` has to catch this collision even though neither
+    /// input name existed on disk to begin with.
+    #[test]
+    fn colliding_sanitized_names_do_not_overwrite_each_other() {
+        let dir = tempdir().unwrap();
+        fs::write(dir.path().join("report*.txt"), b"first").unwrap();
+        fs::write(dir.path().join("report?.txt"), b"second").unwrap();
+
+        let mut args = args_for(dir.path().to_path_buf(), true, false);
+        args.replace = '_';
+        let mut stats = Stats::default();
+        process(&args, &mut stats, &mut None);
+
+        assert_eq!(stats.fixed, 2);
+        // Neither original file's content was lost to a silent overwrite.
+        let mut contents: Vec<String> = fs::read_dir(dir.path())
+            .unwrap()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.path().extension().map(|ext| ext == "txt").unwrap_or(false))
+            .map(|e| fs::read_to_string(e.path()).unwrap())
+            .collect();
+        contents.sort();
+        assert_eq!(contents, vec!["first".to_string(), "second".to_string()]);
     }
 
     /// Regression test for the other bug found in this audit pass: a
