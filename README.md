@@ -153,7 +153,7 @@ exfatify [OPTIONS] <PATH>
 | `--log <FILE>` | `-l` | Write a plain-text copy of the run to a file (mode `0600`). |
 | `--verbose` | `-v` | Also print entries that are already exFAT-safe. |
 | `--no-symlinks` | | Skip symlinks entirely instead of renaming the link itself. |
-| `--help` | `-h` | Show usage and flag descriptions. |
+| `--help` | `-h` | Show usage and flag descriptions (`--help` adds a short extra note per flag; `-h` stays one line each). |
 | `--version` | `-V` | Print the version. |
 
 ## Modes

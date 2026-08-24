@@ -33,19 +33,43 @@ pub struct Args {
     pub path: PathBuf,
 
     /// Report problems only; change nothing. Default mode.
-    #[arg(short = 's', long, conflicts_with_all = ["fix", "dry_run"])]
+    #[arg(
+        short = 's',
+        long,
+        conflicts_with_all = ["fix", "dry_run"],
+        long_help = "Report problems only; change nothing. Default mode. \
+                     Cannot be combined with --fix or --dry-run."
+    )]
     pub scan: bool,
 
     /// Rename files that violate exFAT naming rules.
-    #[arg(short = 'f', long, conflicts_with = "scan")]
+    #[arg(
+        short = 'f',
+        long,
+        conflicts_with = "scan",
+        long_help = "Rename files that violate exFAT naming rules. \
+                     Pair with --backup for a safety net."
+    )]
     pub fix: bool,
 
     /// Show what --fix would do, without changing anything.
-    #[arg(short = 'n', long = "dry-run", conflicts_with = "scan")]
+    #[arg(
+        short = 'n',
+        long = "dry-run",
+        conflicts_with = "scan",
+        long_help = "Show what --fix would do, without changing anything. \
+                     Reports the exact same renames a subsequent --fix run will make."
+    )]
     pub dry_run: bool,
 
     /// Character used to replace each illegal character.
-    #[arg(short = 'r', long, default_value = "-")]
+    #[arg(
+        short = 'r',
+        long,
+        default_value = "-",
+        long_help = "Character used to replace each illegal character. \
+                     Must not itself be illegal, a control character, a space, a period, or '/'."
+    )]
     pub replace: char,
 
     /// Also print entries that are already exFAT-safe.
@@ -53,15 +77,30 @@ pub struct Args {
     pub verbose: bool,
 
     /// Write a plain-text copy of the run's output to this file.
-    #[arg(short = 'l', long, value_name = "FILE")]
+    #[arg(
+        short = 'l',
+        long,
+        value_name = "FILE",
+        long_help = "Write a plain-text copy of the run's output to this file. \
+                     Created with permissions 0600 on Unix, since it can contain full paths."
+    )]
     pub log: Option<PathBuf>,
 
     /// Before renaming a file, copy it to `<n>.bak`.
-    #[arg(short = 'b', long)]
+    #[arg(
+        short = 'b',
+        long,
+        long_help = "Before renaming a file, copy it to `<n>.bak`. \
+                     Applies to regular files only — directories and symlinks are never backed up."
+    )]
     pub backup: bool,
 
     /// Skip symlinks entirely instead of renaming the link itself.
-    #[arg(long = "no-symlinks")]
+    #[arg(
+        long = "no-symlinks",
+        long_help = "Skip symlinks entirely instead of renaming the link itself. \
+                     By default, symlinks are renamed like any other entry, without following them."
+    )]
     pub no_symlinks: bool,
 }
 
