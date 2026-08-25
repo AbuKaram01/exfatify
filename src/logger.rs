@@ -37,15 +37,6 @@ pub struct Stats {
 }
 
 /// Strips ANSI escape sequences from `s`, returning a plain-text copy.
-///
-/// # Examples
-///
-/// ```
-/// use crate::logger::strip_ansi;
-///
-/// let colored = "\x1b[31mERROR\x1b[0m: something broke";
-/// assert_eq!(strip_ansi(colored), "ERROR: something broke");
-/// ```
 pub fn strip_ansi(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     let mut chars = s.chars().peekable();

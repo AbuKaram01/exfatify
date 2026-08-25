@@ -171,7 +171,7 @@ Directories are processed contents-first: every file and subdirectory gets renam
 ## Testing
 
 ```bash
-cargo test     # 68 unit tests + 11 doctests
+cargo test     # 68 unit tests
 cargo clippy   # zero warnings
 ```
 

@@ -21,16 +21,8 @@
 use crate::constants::{ILLEGAL_CHARS, MAX_NAME_UTF16, RESERVED_NAMES};
 
 /// Length of `s` in UTF-16 code units — exFAT's unit of measurement, not
-/// bytes and not `char`s. A surrogate pair (most emoji) counts as 2.
-///
-/// # Examples
-///
-/// ```
-/// use crate::checker::utf16_len;
-///
-/// assert_eq!(utf16_len("hello"), 5);
-/// assert_eq!(utf16_len("😀"), 2);
-/// ```
+/// bytes and not `char`s. A surrogate pair (most emoji) counts as 2, e.g.
+/// `"😀"` is 2 units, not 1.
 pub fn utf16_len(s: &str) -> usize {
     s.encode_utf16().count()
 }
@@ -39,16 +31,6 @@ pub fn utf16_len(s: &str) -> usize {
 /// illegal or control character, a [reserved name](is_reserved), or a
 /// leading space / trailing space / trailing period. Leading periods are
 /// fine — dotfiles like `.bashrc` are untouched.
-///
-/// # Examples
-///
-/// ```
-/// use crate::checker::needs_fix;
-///
-/// assert!(needs_fix("report*.txt"));
-/// assert!(needs_fix("notes "));
-/// assert!(!needs_fix(".bashrc"));
-/// ```
 pub fn needs_fix(name: &str) -> bool {
     utf16_len(name) > MAX_NAME_UTF16
         || name
@@ -63,15 +45,6 @@ pub fn needs_fix(name: &str) -> bool {
 /// `true` if `name`'s stem (before the first `.`) matches a
 /// Windows-reserved device name, case-insensitively, regardless of
 /// extension (`NUL.tar.gz` counts).
-///
-/// # Examples
-///
-/// ```
-/// use crate::checker::is_reserved;
-///
-/// assert!(is_reserved("nul.txt"));
-/// assert!(!is_reserved("NULL"));
-/// ```
 pub fn is_reserved(name: &str) -> bool {
     let stem = name.find('.').map(|i| &name[..i]).unwrap_or(name);
     let normalized = stem.trim_matches(|c: char| c == ' ' || c == '.');

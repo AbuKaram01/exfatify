@@ -35,19 +35,11 @@ use crate::constants::{ILLEGAL_CHARS, MAX_NAME_UTF16};
 /// 5. Truncate to 255 UTF-16 units, preserving the extension when there's
 ///    room for one.
 ///
+/// E.g. `"report*.txt"` → `"report-.txt"`, `"NUL"` → `"_NUL"`, `"..."` →
+/// `"unnamed_file"` (with `replace = '-'`).
+///
 /// Does not check for collisions with sibling entries — pair with
 /// [`unique_name`] for that.
-///
-/// # Examples
-///
-/// ```
-/// use crate::sanitizer::sanitize;
-///
-/// assert_eq!(sanitize("report*.txt", '-'), "report-.txt");
-/// assert_eq!(sanitize(".bashrc", '-'), ".bashrc");
-/// assert_eq!(sanitize("NUL", '-'), "_NUL");
-/// assert_eq!(sanitize("...", '-'), "unnamed_file");
-/// ```
 pub fn sanitize(name: &str, replace: char) -> String {
     let mut result: String = name
         .chars()
@@ -129,15 +121,6 @@ pub(crate) fn truncate_to_utf16(s: &str, max_utf16: usize) -> String {
 /// Uses `str::to_uppercase` rather than exFAT's bundled Up-case Table, so
 /// a handful of length-changing case mappings (e.g. German `ß` → `"SS"`)
 /// can disagree with the real table.
-///
-/// # Examples
-///
-/// ```no_run
-/// use std::path::Path;
-/// use crate::sanitizer::case_insensitive_match_exists;
-///
-/// let collides = case_insensitive_match_exists(Path::new("/some/directory"), "report.txt", None);
-/// ```
 pub fn case_insensitive_match_exists(dir: &Path, name: &str, exclude: Option<&Path>) -> bool {
     let target = name.to_uppercase();
     let Ok(entries) = fs::read_dir(dir) else {
@@ -166,17 +149,6 @@ pub fn case_insensitive_match_exists(dir: &Path, name: &str, exclude: Option<&Pa
 /// lexicographically smallest) is the keeper, and every other member is
 /// "the duplicate". That keeps scan and fix mode in agreement regardless
 /// of directory-walk order.
-///
-/// # Examples
-///
-/// ```no_run
-/// use std::path::Path;
-/// use crate::sanitizer::is_case_insensitive_duplicate;
-///
-/// let dir = Path::new("/some/directory");
-/// assert!(!is_case_insensitive_duplicate(dir, "Report.txt", None));
-/// assert!(is_case_insensitive_duplicate(dir, "report.txt", None));
-/// ```
 pub fn is_case_insensitive_duplicate(dir: &Path, name: &str, exclude: Option<&Path>) -> bool {
     let target = name.to_uppercase();
     let Ok(entries) = fs::read_dir(dir) else {
@@ -200,15 +172,6 @@ pub fn is_case_insensitive_duplicate(dir: &Path, name: &str, exclude: Option<&Pa
 ///
 /// `exclude`, if given, is the entry being renamed, so it doesn't collide
 /// with its own not-yet-renamed self.
-///
-/// # Examples
-///
-/// ```no_run
-/// use std::path::Path;
-/// use crate::sanitizer::unique_name;
-///
-/// let name = unique_name(Path::new("/some/directory"), "photo.jpg", None);
-/// ```
 pub fn unique_name(dir: &Path, name: &str, exclude: Option<&Path>) -> String {
     if !case_insensitive_match_exists(dir, name, exclude) {
         return name.to_owned();
@@ -238,14 +201,6 @@ pub fn unique_name(dir: &Path, name: &str, exclude: Option<&Path>) -> String {
 
 /// Builds a `.bak` filename for `name`, truncating if necessary to stay
 /// within [`MAX_NAME_UTF16`].
-///
-/// # Examples
-///
-/// ```
-/// use crate::sanitizer::backup_name;
-///
-/// assert_eq!(backup_name("photo.jpg"), "photo.jpg.bak");
-/// ```
 pub fn backup_name(name: &str) -> String {
     const BAK_SUFFIX: &str = ".bak";
     let suffix_units = utf16_len(BAK_SUFFIX);

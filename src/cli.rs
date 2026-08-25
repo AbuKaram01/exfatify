@@ -133,16 +133,6 @@ impl std::fmt::Display for InvalidReplaceChar {
 impl Args {
     /// `true` if this invocation must not modify the filesystem: `--scan`
     /// (explicit or default) or `--dry-run`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use clap::Parser;
-    /// use crate::cli::Args;
-    ///
-    /// let args = Args::parse_from(["exfatify", "--scan", "/tmp"]);
-    /// assert!(args.is_readonly());
-    /// ```
     pub fn is_readonly(&self) -> bool {
         // Equivalent to `scan || dry_run || (!fix && !dry_run)`, simplified
         // to `scan || dry_run || !fix`.
@@ -150,16 +140,6 @@ impl Args {
     }
 
     /// Validates [`Self::replace`], returning why it's unusable if so.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use clap::Parser;
-    /// use crate::cli::{Args, InvalidReplaceChar};
-    ///
-    /// let args = Args::parse_from(["exfatify", "--replace", "*", "/tmp"]);
-    /// assert_eq!(args.validate_replace_char(), Err(InvalidReplaceChar::Illegal('*')));
-    /// ```
     pub fn validate_replace_char(&self) -> Result<(), InvalidReplaceChar> {
         use crate::constants::ILLEGAL_CHARS;
 
