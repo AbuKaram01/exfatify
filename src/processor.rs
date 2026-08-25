@@ -29,7 +29,7 @@ use crate::logger::{emit, Stats};
 use crate::sanitizer::{backup_name, is_case_insensitive_duplicate, sanitize, unique_name};
 
 /// Walks `args.path` and, for every entry whose name either violates an
-/// exFAT naming rule or is the "loser" of a case-insensitive collision
+/// exFAT/Windows naming rule or is the "loser" of a case-insensitive collision
 /// with a sibling, reports it (scan/dry-run) or renames it (fix),
 /// updating `stats` and writing through [`emit`] as it goes.
 ///

@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-//! Read-only checks: does a filename violate an exFAT naming rule?
+//! Read-only checks: does a filename violate an exFAT/Windows naming rule?
 //!
 //! Nothing here modifies a name — pair [`needs_fix`] with
 //! [`crate::sanitizer::sanitize`] to actually fix one.
@@ -27,7 +27,7 @@ pub fn utf16_len(s: &str) -> usize {
     s.encode_utf16().count()
 }
 
-/// `true` if `name` breaks an exFAT naming rule: over 255 UTF-16 units, an
+/// `true` if `name` breaks an exFAT/Windows naming rule: over 255 UTF-16 units, an
 /// illegal or control character, a [reserved name](is_reserved), or a
 /// leading space / trailing space / trailing period. Leading periods are
 /// fine — dotfiles like `.bashrc` are untouched.

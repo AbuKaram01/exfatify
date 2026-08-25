@@ -13,7 +13,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-//! Turns a problematic filename into one that's safe on exFAT.
+//! Turns a problematic filename into one that's safe on exFAT and Windows.
 //!
 //! [`case_insensitive_match_exists`], [`is_case_insensitive_duplicate`],
 //! and [`unique_name`] read the filesystem to detect collisions; nothing
@@ -25,7 +25,7 @@ use std::path::Path;
 use crate::checker::{is_reserved, utf16_len};
 use crate::constants::{ILLEGAL_CHARS, MAX_NAME_UTF16};
 
-/// Produces an exFAT-safe version of `name`:
+/// Produces an exFAT/Windows-safe version of `name`:
 ///
 /// 1. Replace each illegal/control character with `replace`.
 /// 2. Trim a leading space and trailing spaces/periods (leading periods,
@@ -222,6 +222,19 @@ mod tests {
     #[test]
     fn sanitize_replaces_illegal_chars() {
         assert_eq!(sanitize("a:b*c?.txt", '_'), "a_b_c_.txt");
+    }
+
+    /// `/` is part of the documented Windows/exFAT illegal-character set
+    /// (confirmed against Microsoft's own file-naming docs), even though
+    /// no real filesystem walk can ever hand us a name containing one —
+    /// both Unix and Windows use it as a path separator, so it can never
+    /// survive as part of an actual filename component. Covered anyway,
+    /// since `sanitize`/`needs_fix` take a bare `&str` and shouldn't
+    /// silently accept it if one ever did show up (e.g. a name read from
+    /// a non-standard source).
+    #[test]
+    fn sanitize_replaces_forward_slash() {
+        assert_eq!(sanitize("a/b.txt", '_'), "a_b.txt");
     }
 
     #[test]

@@ -26,7 +26,7 @@ use clap::Parser;
 #[command(
     name = "exfatify",
     version,
-    about = "Sanitize filenames for exFAT compatibility"
+    about = "Sanitize filenames for exFAT/Windows compatibility"
 )]
 pub struct Args {
     /// Root directory to scan (recursively).
@@ -42,12 +42,12 @@ pub struct Args {
     )]
     pub scan: bool,
 
-    /// Rename files that violate exFAT naming rules.
+    /// Rename files that violate exFAT/Windows naming rules.
     #[arg(
         short = 'f',
         long,
         conflicts_with = "scan",
-        long_help = "Rename files that violate exFAT naming rules. \
+        long_help = "Rename files that violate exFAT/Windows naming rules. \
                      Pair with --backup for a safety net."
     )]
     pub fix: bool,
@@ -68,11 +68,11 @@ pub struct Args {
         long,
         default_value = "-",
         long_help = "Character used to replace each illegal character. \
-                     Must not itself be illegal, a control character, a space, a period, or '/'."
+                     Must not itself be illegal, a control character, a space, or a period."
     )]
     pub replace: char,
 
-    /// Also print entries that are already exFAT-safe.
+    /// Also print entries that are already exFAT/Windows-safe.
     #[arg(short = 'v', long)]
     pub verbose: bool,
 
@@ -107,7 +107,7 @@ pub struct Args {
 /// Why a candidate replacement character ([`Args::replace`]) can't be used.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InvalidReplaceChar {
-    /// Itself an exFAT-illegal or control character.
+    /// Itself an exFAT/Windows-illegal or control character.
     Illegal(char),
     /// A space or period — would recreate the trailing-space/period rule
     /// violation.
@@ -119,12 +119,13 @@ impl std::fmt::Display for InvalidReplaceChar {
         match self {
             InvalidReplaceChar::Illegal(c) => write!(
                 f,
-                "'{c}' is itself illegal in exFAT — choose a different replacement char"
+                "'{c}' is itself illegal in exFAT/Windows filenames — choose a different \
+                 replacement char"
             ),
             InvalidReplaceChar::ProducesTrailingIssue(c) => write!(
                 f,
                 "'{c}' as replacement char can produce filenames ending in space/dot \
-                 (forbidden on exFAT) — choose a different character"
+                 (forbidden on exFAT/Windows) — choose a different character"
             ),
         }
     }
@@ -148,9 +149,6 @@ impl Args {
         }
         if self.replace == '.' || self.replace == ' ' {
             return Err(InvalidReplaceChar::ProducesTrailingIssue(self.replace));
-        }
-        if self.replace == '/' || self.replace == '\0' {
-            return Err(InvalidReplaceChar::Illegal(self.replace));
         }
         Ok(())
     }

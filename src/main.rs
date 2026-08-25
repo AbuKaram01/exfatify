@@ -109,7 +109,7 @@ fn main() {
     emit("", &mut log);
     emit(
         &format!(
-            "  {}: \\:*?\"<>| + ctrl, leading/trailing space, trailing period, len>255, reserved names",
+            "  {}: \\/:*?\"<>| + ctrl, leading/trailing space, trailing period, len>255, reserved names",
             "Rules".bold()
         ),
         &mut log,
@@ -145,7 +145,7 @@ fn main() {
 
     let closing = if stats.found == 0 {
         format!(
-            "  {} All filenames are exFAT-compatible!\n",
+            "  {} All filenames are exFAT/Windows-compatible!\n",
             "✔".green().bold()
         )
     } else if args.is_readonly() {

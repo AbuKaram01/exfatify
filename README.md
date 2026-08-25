@@ -1,10 +1,10 @@
 # exfatify
 
-**Find and fix filenames that break on exFAT — before they break on exFAT.**
+**Find and fix filenames that break on exFAT or Windows — before they break.**
 
-exFAT is the de facto standard for SD cards, USB drives, and external SSDs because it's readable by Windows, macOS, and Linux alike. The catch: it inherits Windows' naming restrictions, and most other filesystems don't enforce them. Build up a folder on Linux or macOS for a while and you *will* eventually have a filename that exFAT simply refuses to write — or worse, silently mangles.
+exFAT is the de facto standard for SD cards, USB drives, and external SSDs because it's readable by Windows, macOS, and Linux alike. The catch: it inherits Windows' naming restrictions, and most other filesystems don't enforce them. Build up a folder on Linux or macOS for a while and you *will* eventually have a filename that exFAT or Windows simply refuses to write — or worse, silently mangles.
 
-`exfatify` finds every filename in a directory tree that exFAT would choke on, shows you exactly what it would change, and — only when you ask it to — fixes it.
+`exfatify` finds every filename in a directory tree that exFAT or Windows would choke on, shows you exactly what it would change, and — only when you ask it to — fixes it.
 
 ```
 $ exfatify --scan ~/Pictures
@@ -15,7 +15,7 @@ $ exfatify --scan ~/Pictures
   Skip symlinks:   false
   Backup files:    false
 
-  Rules: \:*?"<>| + ctrl, leading/trailing space, trailing period, len>255, reserved names
+  Rules: \/:*?"<>| + ctrl, leading/trailing space, trailing period, len>255, reserved names
 
 ──────────────────────────────────────────
   [PROBLEM] /home/you/Pictures/Trip: Day 1?.jpg
@@ -64,7 +64,7 @@ None of this shows up until you've already copied a few thousand files to a driv
 
 | Problem | Example | Why it matters |
 |---|---|---|
-| Illegal characters | `Report: Q3?.pdf` | `\ : * ? " < > \|` and control characters (`U+0000`–`U+001F`) are forbidden outright |
+| Illegal characters | `Report: Q3?.pdf` | `\ / : * ? " < > \|` and control characters (`U+0000`–`U+001F`) are forbidden outright |
 | Reserved device names | `NUL.txt`, `con.tar.gz` | `CON`, `PRN`, `AUX`, `NUL`, `COM1`–`COM9`, `LPT1`–`LPT9` are blocked regardless of extension |
 | Leading or trailing space, trailing period | ` notes.txt`, `notes `, `archive.` | The FAT/exFAT long-name spec itself says these are ignored on write — confirmed against Microsoft's exFAT docs and direct `CopyFile` API testing. (A *leading* period is explicitly fine — `.bashrc`-style dotfiles are untouched.) |
 | Names over 255 UTF-16 units | a very long filename | Measured the same way exFAT and the Win32 API measure it — not bytes, not `char`s |
@@ -148,10 +148,10 @@ exfatify [OPTIONS] <PATH>
 | `--scan` | `-s` | Report problems only, change nothing. **Default mode.** |
 | `--fix` | `-f` | Actually rename files. |
 | `--dry-run` | `-n` | Show what `--fix` would do, without changing anything. |
-| `--replace <CHAR>` | `-r` | Character used to replace illegal characters. Cannot itself be illegal (`` \ : * ? " < > | ``), a control character, a space, a period, or `/`. Default: `-` |
+| `--replace <CHAR>` | `-r` | Character used to replace illegal characters. Cannot itself be illegal (`` \ / : * ? " < > | ``), a control character, a space, or a period. Default: `-` |
 | `--backup` | `-b` | Copy each file to `<name>.bak` before renaming it. |
 | `--log <FILE>` | `-l` | Write a plain-text copy of the run to a file (mode `0600`). |
-| `--verbose` | `-v` | Also print entries that are already exFAT-safe. |
+| `--verbose` | `-v` | Also print entries that are already exFAT/Windows-safe. |
 | `--no-symlinks` | | Skip symlinks entirely instead of renaming the link itself. |
 | `--help` | `-h` | Show usage and flag descriptions (`--help` adds a short extra note per flag; `-h` stays one line each). |
 | `--version` | `-V` | Print the version. |

@@ -26,7 +26,7 @@ use std::path::Path;
 /// Tally of what happened during a [`crate::processor::process`] run.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Stats {
-    /// Number of entries whose names violated an exFAT rule.
+    /// Number of entries whose names violated an exFAT/Windows naming rule.
     pub found: usize,
     /// Number of entries actually renamed (fix mode only).
     pub fixed: usize,
