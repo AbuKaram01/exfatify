@@ -424,7 +424,12 @@ mod tests {
         let mut contents: Vec<String> = fs::read_dir(dir.path())
             .unwrap()
             .filter_map(|e| e.ok())
-            .filter(|e| e.path().extension().map(|ext| ext == "txt").unwrap_or(false))
+            .filter(|e| {
+                e.path()
+                    .extension()
+                    .map(|ext| ext == "txt")
+                    .unwrap_or(false)
+            })
             .map(|e| fs::read_to_string(e.path()).unwrap())
             .collect();
         contents.sort();
