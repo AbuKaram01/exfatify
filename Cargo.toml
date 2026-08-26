@@ -4,7 +4,7 @@ version     = "1.0.2"
 edition     = "2021"
 description = "Sanitize filenames for exFAT/Windows compatibility"
 license     = "GPL-3.0-or-later"
-authors     = ["AbuKaram01"]
+authors     = ["AbuKaram01 <abukaram01@proton.me>"]
 repository  = "https://github.com/AbuKaram01/exfatify"
 readme      = "README.md"
 
@@ -33,7 +33,7 @@ panic         = "abort"
 # ── .deb (cargo-deb) ──────────────────────────────────────────────────────────
 [package.metadata.deb]
 name               = "exfatify"
-maintainer         = "AbuKaram01"
+maintainer         = "AbuKaram01 <abukaram01@proton.me>"
 copyright          = "2026, AbuKaram01"
 license-file       = "LICENSE"
 extended-description = """\
