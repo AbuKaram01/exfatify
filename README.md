@@ -192,6 +192,4 @@ Issues and pull requests are welcome. A few things that'll make a PR easier to r
 
 ## License
 
-[AGPL-3.0-or-later](LICENSE) © AbuKaram01
-
-This is a stricter copyleft than the plain GPL: if you modify `exfatify` and run it as part of a network service (for example, a web-based version of this tool), the AGPL requires you to make your modified source available to that service's users — not just to people you hand a binary to.
+[GPL-3.0-or-later](LICENSE) © AbuKaram01
