@@ -1,97 +1,41 @@
 # exfatify
 
-**Find and fix filenames that break on exFAT or Windows — before they break.**
+A CLI tool that finds and fixes filenames that break on exFAT or Windows. It never renames anything unless you explicitly run it with `--fix`.
 
-exFAT is the de facto standard for SD cards, USB drives, and external SSDs because it's readable by Windows, macOS, and Linux alike. The catch: it inherits Windows' naming restrictions, and most other filesystems don't enforce them. Build up a folder on Linux or macOS for a while and you *will* eventually have a filename that exFAT or Windows simply refuses to write — or worse, silently mangles.
+## Why exfatify?
 
-`exfatify` finds every filename in a directory tree that exFAT or Windows would choke on, shows you exactly what it would change, and — only when you ask it to — fixes it.
+exFAT's naming rules are mostly inherited from Windows, not from exFAT's own underlying constraints — which is exactly why they're easy to violate without noticing on Linux or macOS. Both allow characters like `:`, `*`, and `?` in filenames, and both are case-sensitive, while exFAT is case-insensitive but case-preserving: `Report.txt` and `report.txt` are the same file on an exFAT volume, even though they're two different files everywhere else. None of this shows up until you've already copied a few thousand files to a drive and something fails halfway through, or two files silently overwrite each other.
 
-```
-$ exfatify --scan ~/Pictures
+## Why Not an Existing Tool?
 
-  Path:            /home/you/Pictures
-  Mode:            Scan Only (default — use --fix to apply changes)
-  Replace:         '-'
-  Skip symlinks:   false
-  Backup files:    false
+Most generic filename sanitizers stop at illegal characters — they don't check for exFAT's case-insensitive collisions, since that's not something Linux or macOS filesystems ever have to deal with. A script that blindly replaces `:` and `*` can still hand you two files that merge into one the moment they land on an exFAT drive. exfatify treats that as a first-class problem: every rename is checked against the rest of the folder, case-insensitively, before it happens — nothing gets silently overwritten. It's also a single native binary with no scripting runtime or external dependency to install.
 
-  Rules: \/:*?"<>| + ctrl, leading/trailing space, trailing period, len>255, reserved names
+## What It Does and Doesn't Do
 
-──────────────────────────────────────────
-  [PROBLEM] /home/you/Pictures/Trip: Day 1?.jpg
-            -> would become: Trip- Day 1-.jpg
-  [PROBLEM] /home/you/Pictures/notes.txt 
-            -> would become: notes.txt
-  [PROBLEM] /home/you/Pictures/Screenshot.PNG
-            -> would become: Screenshot-1.PNG
+Fixes:
+- Illegal characters (`\ / : * ? " < > |`) and control characters
+- Reserved Windows device names (`CON`, `PRN`, `AUX`, `NUL`, `COM1`-`COM9`, `LPT1`-`LPT9`), regardless of extension
+- Leading/trailing spaces and trailing periods
+- Names over 255 UTF-16 code units
+- Case-insensitive collisions between sibling files — the losing name gets a numeric suffix instead of overwriting the other
 
-──────────────────────────────────────────
-  Problems found:  3
-──────────────────────────────────────────
-  ⚠ Run with --fix to apply changes.
-```
+Leaves untouched:
+- File contents
+- Permissions, timestamps, ownership
+- Symlink targets — only the link itself is renamed, never followed (skip entirely with `--no-symlinks`)
+- Directory structure — files are renamed in place, never moved
+- Unicode normalization differences
 
----
+## Installation and Building
 
-## Table of contents
-
-- [Why this exists](#why-this-exists)
-- [What it catches](#what-it-catches)
-- [Installation](#installation)
-- [Usage](#usage)
-- [CLI reference](#cli-reference)
-- [Modes](#modes)
-- [Testing](#testing)
-- [Known limitations](#known-limitations)
-- [Contributing](#contributing)
-- [License](#license)
-
----
-
-## Why this exists
-
-exFAT's naming rules are mostly inherited from Windows, not from exFAT's own underlying constraints — which is exactly why they're easy to violate without noticing on a Linux or macOS machine:
-
-- Linux and macOS happily allow `:`, `*`, `?`, and friends in filenames. exFAT doesn't.
-- Linux and macOS are case-*sensitive*. exFAT is case-*insensitive* but case-*preserving* — `Report.txt` and `report.txt` are the **same file** on an exFAT volume, even though they're two different files everywhere else.
-- A file named `NUL.tar.gz` is completely normal on Linux. Try opening it on Windows.
-- A filename ending in a space or a period gets silently stripped by Windows — or rejected outright, depending on the tool.
-- exFAT's 255-character limit is measured in UTF-16 *code units*, not bytes and not characters — so a filename full of emoji can hit the limit at half the character count you'd expect.
-
-None of this shows up until you've already copied a few thousand files to a drive and something fails halfway through, or two files silently overwrote each other. `exfatify` catches all of it up front.
-
-## What it catches
-
-| Problem | Example | Why it matters |
-|---|---|---|
-| Illegal characters | `Report: Q3?.pdf` | `\ / : * ? " < > \|` and control characters (`U+0000`–`U+001F`) are forbidden outright |
-| Reserved device names | `NUL.txt`, `con.tar.gz` | `CON`, `PRN`, `AUX`, `NUL`, `COM1`–`COM9`, `LPT1`–`LPT9` are blocked regardless of extension |
-| Leading or trailing space, trailing period | ` notes.txt`, `notes `, `archive.` | The FAT/exFAT long-name spec itself says these are ignored on write — confirmed against Microsoft's exFAT docs and direct `CopyFile` API testing. (A *leading* period is explicitly fine — `.bashrc`-style dotfiles are untouched.) |
-| Names over 255 UTF-16 units | a very long filename | Measured the same way exFAT and the Win32 API measure it — not bytes, not `char`s |
-| Case-insensitive collisions | `Vacation.JPG` + `vacation.jpg` | Two distinct files on your source drive become **one file** on exFAT, silently |
-
-Every fix is **collision-safe**: if the cleaned-up name would collide with something else in the same folder (including case-insensitively), a numeric suffix gets appended instead of overwriting anything.
-
-## Installation
-
-### From source
-
-```bash
-git clone https://github.com/AbuKaram01/exfatify.git
-cd exfatify
-cargo install --path .
-```
-
-### Debian/Ubuntu (`.deb`)
-
+Debian/Ubuntu:
 ```bash
 cargo install cargo-deb
 cargo deb
 sudo dpkg -i target/debian/exfatify_*.deb
 ```
 
-### Fedora/RHEL (`.rpm`)
-
+Fedora/RHEL:
 ```bash
 cargo install cargo-generate-rpm
 cargo build --release
@@ -99,97 +43,38 @@ cargo generate-rpm
 sudo rpm -i target/generate-rpm/exfatify-*.rpm
 ```
 
+From source:
+```bash
+git clone https://github.com/AbuKaram01/exfatify.git
+cd exfatify
+cargo install --path .
+```
+
 ## Usage
-
-**Always start with `--scan`** (the default — you don't even need to pass it) to see what would change without touching anything:
-
-```bash
-exfatify ~/Downloads
-```
-
-Then preview the exact renames `--fix` would perform, still without changing anything:
-
-```bash
-exfatify --fix --dry-run ~/Downloads
-```
-
-When you're happy with the plan, apply it for real:
-
-```bash
-exfatify --fix ~/Downloads
-```
-
-Keep a safety net by backing up every file before it's renamed:
-
-```bash
-exfatify --fix --backup ~/Downloads
-```
-
-Use a different replacement character (default is `-`):
-
-```bash
-exfatify --fix --replace _ ~/Music
-```
-
-Keep a record of everything that happened:
-
-```bash
-exfatify --fix --backup --log ~/exfat-report.txt ~/Documents
-```
-
-## CLI reference
 
 ```
 exfatify [OPTIONS] <PATH>
 ```
 
-| Flag | Short | Description |
-|---|---|---|
-| `--scan` | `-s` | Report problems only, change nothing. **Default mode.** |
-| `--fix` | `-f` | Actually rename files. |
-| `--dry-run` | `-n` | Show what `--fix` would do, without changing anything. |
-| `--replace <CHAR>` | `-r` | Character used to replace illegal characters. Cannot itself be illegal (`` \ / : * ? " < > | ``), a control character, a space, or a period. Default: `-` |
-| `--backup` | `-b` | Copy each file to `<name>.bak` before renaming it. |
-| `--log <FILE>` | `-l` | Write a plain-text copy of the run to a file (mode `0600`). |
-| `--verbose` | `-v` | Also print entries that are already exFAT/Windows-safe. |
-| `--no-symlinks` | | Skip symlinks entirely instead of renaming the link itself. |
-| `--help` | `-h` | Show usage and flag descriptions (`--help` adds a short extra note per flag; `-h` stays one line each). |
-| `--version` | `-V` | Print the version. |
-
-## Modes
-
-| | Reads the filesystem | Renames anything | Use it for |
-|---|:---:|:---:|---|
-| **Scan** (default) | ✅ | ❌ | "What's wrong, exactly?" |
-| **Dry-run** (`--fix --dry-run`) | ✅ | ❌ | "What would `--fix` actually do?" |
-| **Fix** (`--fix`) | ✅ | ✅ | Apply the plan |
-
-Scan and dry-run always report the **exact same set of changes** that a subsequent fix run will make — including which side of a case-insensitive collision gets renamed — so there are no surprises between preview and execution.
-
-Directories are processed contents-first: every file and subdirectory gets renamed before its parent, so a renamed parent directory never orphans paths still queued underneath it.
-
-## Testing
-
 ```bash
-cargo test     # 68 unit tests
-cargo clippy   # zero warnings
+exfatify ~/Downloads                          # scan (default) — nothing changes
+exfatify --fix --dry-run ~/Downloads          # preview the exact renames
+exfatify --fix --backup ~/Downloads           # apply them, with a safety net
+exfatify --fix --replace _ ~/Music            # use a different replacement char
+exfatify --fix --backup --log run.txt ~/Docs  # keep a record of what happened
 ```
 
-The test suite covers the exFAT rule set itself (illegal characters, reserved names, trailing characters, UTF-16 length), collision-avoidance (including the case-insensitive collisions exFAT introduces that most tools miss), backup behavior, symlink handling, and directory-traversal ordering — including dangling symlinks and pathological filenames (e.g. very long dotfiles) that broke naive implementations during development.
-
-## Known limitations
-
-- **Per-name only, not full-path length.** `exfatify` checks each filename and folder name's own length (255 UTF-16 code units, exFAT's actual limit), but it doesn't track the *cumulative* path length. Some Windows software still enforces the legacy `MAX_PATH` limit (260 characters for the full `drive:\folder\...\file.ext` string) — a deeply nested folder structure can hit that even when every individual name is perfectly valid. This isn't an exFAT filesystem limit (exFAT itself has no such restriction), and modern Windows can disable it entirely via `LongPathsEnabled`, so whether it actually affects you depends on your OS configuration and the specific tools you use to access the drive. If you hit this, the fix is restructuring folders to be shallower — not something this tool attempts automatically, since "fixing" it would mean renaming directories you may not want touched.
-- **Unicode normalization isn't checked.** Two filenames that *look* identical but use different Unicode normalization forms (e.g., a precomposed `é` vs. an `e` + combining accent) are treated as different names, since they're different byte sequences — exFAT itself doesn't normalize either, so this matches real on-disk behavior, but it can be a source of confusing-looking "duplicates" that the case-insensitive collision check won't catch.
-
-## Contributing
-
-Issues and pull requests are welcome. A few things that'll make a PR easier to review:
-
-- Run `cargo test` and `cargo clippy` before opening the PR — both should be clean.
-- New behavior should come with a test. If you're fixing a bug, a regression test that fails before your fix and passes after it is ideal.
-- Keep the module boundaries: `checker` stays read-only, `sanitizer` stays pure (aside from the documented filesystem reads), filesystem writes stay in `processor`.
+Flags:
+- `-s, --scan` — report problems only, change nothing (default)
+- `-f, --fix` — rename files
+- `-n, --dry-run` — show what `--fix` would do, without changing anything
+- `-r, --replace <CHAR>` — character used to replace illegal characters (default `-`)
+- `-b, --backup` — copy each file to `<name>.bak` before renaming it
+- `-l, --log <FILE>` — write a plain-text copy of the run to a file
+- `-v, --verbose` — also print entries that are already safe
+- `--no-symlinks` — skip symlinks entirely instead of renaming the link itself
+- `-h, --help` / `-V, --version`
 
 ## License
 
-[GPL-3.0-or-later](LICENSE) © AbuKaram01
+GPL-3.0-or-later © AbuKaram01 — see [LICENSE](LICENSE).
